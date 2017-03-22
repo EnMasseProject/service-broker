@@ -1,0 +1,25 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: maas-service-broker
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: maas-service-broker
+    spec:
+      containers:
+      - name: main
+        image: luksa/maas-broker
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: maas-service-broker
+spec:
+  selector:
+    app: maas-service-broker
+  ports:
+  - port: 80
+    targetPort: 1338

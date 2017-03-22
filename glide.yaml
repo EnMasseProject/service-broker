@@ -1,0 +1,31 @@
+package: github.com/EnMasseProject/maas-service-broker
+import:
+- package: github.com/gorilla/mux
+  version: ^1.3.0
+- package: github.com/pborman/uuid
+  version: ^1.0.0
+- package: github.com/spf13/pflag
+- package: gopkg.in/yaml.v2
+- package: k8s.io/kubernetes
+  version: ^1.6.0-alpha.0
+  subpackages:
+  - pkg/api/errors
+  - pkg/api/unversioned
+  - pkg/util/logs
+- package: github.com/jessevdk/go-flags
+  version: ^1.1.0
+- package: github.com/op/go-logging
+  version: ^1.0.0
+- package: github.com/ugorji/go
+- package: github.com/coreos/etcd
+  version: ^3.1.0
+  subpackages:
+  - client
+- package: github.com/gogo/protobuf
+  version: ^0.3.0
+  subpackages:
+  - proto
+  - sortkeys
+- package: github.com/golang/glog
+- package: github.com/docker/go-connections
+  version: 7da10c8c50cad14494ec818dcdfb6506265c0086
