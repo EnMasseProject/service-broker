@@ -1,0 +1,72 @@
+{
+  "kind": "FlavorList",
+  "apiVersion": "v3",
+  "items": [
+    {
+      "kind": "Flavor",
+      "apiVersion": "v3",
+      "metadata": {
+        "name": "vanilla-queue"
+      },
+      "spec": {
+        "type": "queue",
+        "description": "Simple in memory queue"
+      }
+    },
+    {
+      "kind": "Flavor",
+      "apiVersion": "v3",
+      "metadata": {
+        "name": "small-persisted-queue"
+      },
+      "spec": {
+        "type": "queue",
+        "description": "Small queue with persistence"
+      }
+    },
+    {
+      "kind": "Flavor",
+      "apiVersion": "v3",
+      "metadata": {
+        "name": "large-persisted-queue"
+      },
+      "spec": {
+        "type": "queue",
+        "description": "Large queue with persistence"
+      }
+    },
+    {
+      "kind": "Flavor",
+      "apiVersion": "v3",
+      "metadata": {
+        "name": "vanilla-topic"
+      },
+      "spec": {
+        "type": "topic",
+        "description": "Simple in memory topic"
+      }
+    },
+    {
+      "kind": "Flavor",
+      "apiVersion": "v3",
+      "metadata": {
+        "name": "small-persisted-topic"
+      },
+      "spec": {
+        "type": "topic",
+        "description": "Small topic with persistence"
+      }
+    },
+    {
+      "kind": "Flavor",
+      "apiVersion": "v3",
+      "metadata": {
+        "name": "large-persisted-topic"
+      },
+      "spec": {
+        "type": "topic",
+        "description": "Large topic with persistence"
+      }
+    }
+  ]
+}

@@ -40,7 +40,7 @@ objects:
           - "10"
           - --cors-allowed-origins
           - ${CORS_ALLOWED_ORIGIN}
-          image: quay.io/kubernetes-service-catalog/apiserver:v0.0.1-RC1
+          image: quay.io/kubernetes-service-catalog/apiserver:v0.0.1-RC1-6-gcd9d573
           imagePullPolicy: IfNotPresent
           name: apiserver
           ports:
@@ -127,7 +127,7 @@ objects:
           - "5"
           - --service-catalog-api-server-url
           - http://$(APISERVER_SERVICE_HOST):$(APISERVER_SERVICE_PORT)
-          image: quay.io/kubernetes-service-catalog/controller-manager:v0.0.1-RC1
+          image: quay.io/kubernetes-service-catalog/controller-manager:v0.0.1-RC1-6-gcd9d573
           imagePullPolicy: IfNotPresent
           name: controller-manager
           ports:

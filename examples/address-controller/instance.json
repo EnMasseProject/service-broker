@@ -1,0 +1,11 @@
+{
+    "apiVersion": "v3",
+    "kind": "Instance",
+    "metadata": {
+        "name": "my-instance"
+    },
+    "spec": {
+        "namespace": "enmasse-my-instance",
+        "messagingHost": "foo.bar.baz"
+    }
+}

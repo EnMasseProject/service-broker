@@ -1,0 +1,21 @@
+{
+  "kind": "AddressList",
+  "apiVersion": "v3",
+  "items": [
+    {
+      "kind": "Address",
+      "apiVersion": "v3",
+      "status": "/api/v3/status/my-vanilla-queue",
+      "metadata": {
+        "name": "my-vanilla-queue",
+        "uuid": "938515f7-5319-40e2-89fa-8b78a7a8fe23"
+      },
+      "spec": {
+        "store_and_forward": true,
+        "multicast": false,
+        "group": "my-vanilla-queue",
+        "flavor": "vanilla-queue"
+      }
+    }
+  ]
+}

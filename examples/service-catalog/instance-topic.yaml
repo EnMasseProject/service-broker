@@ -2,7 +2,7 @@ apiVersion: servicecatalog.k8s.io/v1alpha1
 kind: Instance
 metadata:
   name: my-vanilla-topic
-  namespace: test-ns
+  namespace: enmasse-client
 spec:
   serviceClassName: topic
   planName: vanilla-topic

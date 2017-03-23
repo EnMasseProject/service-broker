@@ -3,4 +3,4 @@ kind: Broker
 metadata:
   name: maas-broker
 spec:
-  url: http://maas-service-broker.enmasse.svc.cluster.local
+  url: http://maas-service-broker
