@@ -2,7 +2,6 @@ apiVersion: servicecatalog.k8s.io/v1alpha1
 kind: Instance
 metadata:
   name: my-vanilla-queue
-  namespace: enmasse-client
 spec:
   serviceClassName: queue
   planName: vanilla-queue
