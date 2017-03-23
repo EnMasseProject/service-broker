@@ -41,6 +41,14 @@ func CreateApp() App {
 		os.Exit(1)
 	}
 
+	addressControllerHost := os.Getenv("ADDRESS_CONTROLLER_SERVICE_HOST")
+	addressControllerPort := os.Getenv("ADDRESS_CONTROLLER_SERVICE_PORT")
+	if addressControllerHost == "" || addressControllerPort == "" {
+		fmt.Println("The following environment variables must point to the address controller: ADDRESS_CONTROLLER_SERVICE_HOST and ADDRESS_CONTROLLER_SERVICE_PORT")
+		os.Exit(1)
+	}
+	app.config.Maas.Url = "http://" + addressControllerHost + ":" + addressControllerPort
+
 	if app.log, err = NewLog(app.config.Log); err != nil {
 		os.Stderr.WriteString("ERROR: Failed to initialize logger\n")
 		os.Stderr.WriteString(err.Error())

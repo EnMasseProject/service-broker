@@ -5,6 +5,7 @@ import (
 	"github.com/op/go-logging"
 	"github.com/pborman/uuid"
 	"github.com/EnMasseProject/maas-service-broker/pkg/errors"
+	"github.com/kubernetes-incubator/service-catalog/.glide/cache/src/https-k8s.io-kubernetes/pkg/util/strings"
 )
 
 type Broker interface {
@@ -21,6 +22,11 @@ type MaasBroker struct {
 	log      *logging.Logger
 	client   *maas.MaasClient
 }
+
+
+// HACK: needed for deprovisioning; TODO: needs to be replaced with proper storage or removed
+var infraIDs map[*uuid.UUID]string = make(map[*uuid.UUID]string)
+
 
 func NewMaasBroker(
 	log *logging.Logger,
@@ -73,19 +79,19 @@ func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 
 	b.log.Info("Processing flavors")
 	for _,flavor := range flavors {
-		b.log.Info("Flavor: %s (%s)", flavor.Name, flavor.Description)
+		b.log.Info("Flavor: %s (%s)", flavor.Metadata.Name, flavor.Spec.Description)
 		plan := Plan{
-			ID:          uuid.Parse(flavor.Uuid),
-			Name:        SanitizePlanName(flavor.Name),
-			Description: flavor.Description,
+			ID:          uuid.Parse(flavor.Metadata.Uuid),
+			Name:        SanitizePlanName(flavor.Metadata.Name),
+			Description: flavor.Spec.Description,
 			Free:        true,
 		}
-		if flavor.Type == maas.Queue {
+		if flavor.Spec.Type == maas.Queue {
 			queueService.Plans = append(queueService.Plans, plan)
-		} else if flavor.Type == maas.Topic {
+		} else if flavor.Spec.Type == maas.Topic {
 			topicService.Plans = append(topicService.Plans, plan)
 		} else {
-			b.log.Warningf("Unknown flavor type %s", flavor.Type)
+			b.log.Warningf("Unknown flavor type %s", flavor.Spec.Type)
 		}
 	}
 
@@ -138,7 +144,15 @@ func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 func (b MaasBroker) Provision(instanceUUID uuid.UUID, req *ProvisionRequest) (*ProvisionResponse, error) {
 	b.log.Info("Provisioning: %v", req)
 
-	address, err := b.client.GetAddress(instanceUUID)
+	if req.OrganizationID == "" {
+		req.OrganizationID = "some-unique-guid"
+		req.SpaceID = "some-unique-guid"
+	}
+
+	// TODO: this is a temporary hack needed because otherwise the resulting address configmap name is too long
+	infraID := strings.ShortenString(req.OrganizationID, 8)
+
+	address, err := b.client.GetAddress(infraID, instanceUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -155,28 +169,30 @@ func (b MaasBroker) Provision(instanceUUID uuid.UUID, req *ProvisionRequest) (*P
 
 	switch req.ServiceID.String() {
 	case AnycastServiceUUID:
-		b.client.ProvisionAddress(instanceUUID, name, false, false,"")
+		b.client.ProvisionAddress(infraID, instanceUUID, name, false, false,"")
 	case MulticastServiceUUID:
-		b.client.ProvisionAddress(instanceUUID, name, false, true,"")
+		b.client.ProvisionAddress(infraID, instanceUUID, name, false, true,"")
 	case QueueServiceUUID:
 		flavor, err := b.client.GetFlavor(req.PlanID)
 		if err != nil {
 			return nil, err
-		} else if flavor == nil || flavor.Type != maas.Queue {
+		} else if flavor == nil || flavor.Spec.Type != maas.Queue {
 			return nil, errors.NewBadRequest("Invalid plan ID " + req.PlanID.String())
 		}
-		b.client.ProvisionAddress(instanceUUID, name, true, false, flavor.Name)
+		b.client.ProvisionAddress(infraID, instanceUUID, name, true, false, flavor.Metadata.Name)
 	case TopicServiceUUID:
 		flavor, _ := b.client.GetFlavor(req.PlanID)
 		if err != nil {
 			return nil, err
-		} else if flavor == nil || flavor.Type != maas.Topic {
+		} else if flavor == nil || flavor.Spec.Type != maas.Topic {
 			return nil, errors.NewBadRequest("Invalid plan ID " + req.PlanID.String())
 		}
-		b.client.ProvisionAddress(instanceUUID, name, true, true, flavor.Name)
+		b.client.ProvisionAddress(infraID, instanceUUID, name, true, true, flavor.Metadata.Name)
 	default:
 		return nil, errors.NewBadRequest("Unknown service ID " + req.ServiceID.String())
 	}
+
+	infraIDs[&instanceUUID] = infraID
 
 	return &ProvisionResponse{Operation: "successful"}, nil
 }
@@ -184,13 +200,25 @@ func (b MaasBroker) Provision(instanceUUID uuid.UUID, req *ProvisionRequest) (*P
 func (b MaasBroker) Deprovision(instanceUUID uuid.UUID, serviceId string, planId string) (*DeprovisionResponse, error) {
 	b.log.Info("Deprovisioning %s", instanceUUID.String())
 
-	address, _ := b.client.GetAddress(instanceUUID)
-	// Temporarily commented out, because the Service Catalog controller fires multiple deprovision requests and considers it a failure
+
+	//infraID := infraIDs[&instanceUUID]
+	//if infraID == "" {
+	//	return nil, errors.NewServiceInstanceGone(instanceUUID.String())
+	//}
+
+	infraID, address, err := b.client.FindAddress(instanceUUID)
+	if err != nil {
+		return nil, err
+	}
+
 	if address == nil {
 		return nil, errors.NewServiceInstanceGone(instanceUUID.String())
 	}
 
-	b.client.DeprovisionAddress(instanceUUID)
+	b.client.DeprovisionAddress(infraID, instanceUUID)
+
+	infraIDs[&instanceUUID] = ""
+
 	return &DeprovisionResponse{Operation: "successful"}, nil
 }
 

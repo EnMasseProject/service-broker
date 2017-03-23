@@ -55,10 +55,10 @@ type LastOperationResponse struct {
 }
 
 type ProvisionRequest struct {
-	OrganizationID    uuid.UUID         `json:"organization_guid"`
+	OrganizationID    string            `json:"organization_guid"`
 	PlanID            uuid.UUID         `json:"plan_id"`
 	ServiceID         uuid.UUID         `json:"service_id"`
-	SpaceID           uuid.UUID         `json:"space_guid"`
+	SpaceID           string            `json:"space_guid"`
 	Parameters        map[string]string `json:"parameters,omitempty"`
 	AcceptsIncomplete bool              `json:"accepts_incomplete,omitempty"`
 }

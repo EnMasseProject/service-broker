@@ -7,7 +7,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pborman/uuid"
 	"github.com/op/go-logging"
-	"github.com/kubernetes-incubator/service-catalog/.glide/cache/src/https-github.com-prometheus-common/log"
 )
 
 // TODO: implement asynchronous operations
@@ -61,13 +60,13 @@ func (h handler) provision(w http.ResponseWriter, r *http.Request) {
 
 	instanceUUID := uuid.Parse(mux.Vars(r)["instance_uuid"])
 	if instanceUUID == nil {
-		log.Info("Invalid instance_uuid in request")
+		h.log.Info("Invalid instance_uuid in request")
 		writeResponse(w, http.StatusBadRequest, broker.ErrorResponse{Description: "invalid instance_uuid"})
 		return
 	}
 
 	var req *broker.ProvisionRequest
-	err := readRequest(r, &req)
+	err := readRequest(h.log, r, &req)
 
 	if err != nil {
 		writeErrorResponse(w, err, h.log)
@@ -88,7 +87,7 @@ func (h handler) update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req *broker.UpdateRequest
-	if err := readRequest(r, &req); err != nil {
+	if err := readRequest(h.log, r, &req); err != nil {
 		writeResponse(w, http.StatusBadRequest, broker.ErrorResponse{Description: err.Error()})
 		return
 	}
@@ -106,21 +105,21 @@ func (h handler) deprovision(w http.ResponseWriter, r *http.Request) {
 	instanceUUIDstring := mux.Vars(r)["instance_uuid"]
 	instanceUUID := uuid.Parse(instanceUUIDstring)
 	if instanceUUID == nil {
-		log.Info("Invalid instance_uuid in request: %s", instanceUUIDstring)
+		h.log.Info("Invalid instance_uuid in request: %s", instanceUUIDstring)
 		writeResponse(w, http.StatusBadRequest, broker.ErrorResponse{Description: "invalid instance_uuid"})
 		return
 	}
 
 	serviceId := r.FormValue("service_id")
 	if serviceId == "" {
-		log.Info("Missing service_id parameter")
+		h.log.Info("Missing service_id parameter")
 		writeResponse(w, http.StatusBadRequest, broker.ErrorResponse{Description: "missing service_id parameter"})
 		return
 	}
 
 	planId := r.FormValue("plan_id")
 	if planId == "" {
-		log.Info("Missing plan_id parameter")
+		h.log.Info("Missing plan_id parameter")
 		writeResponse(w, http.StatusBadRequest, broker.ErrorResponse{Description: "missing plan_id parameter"})
 		return
 	}
@@ -150,7 +149,7 @@ func (h handler) bind(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req *broker.BindRequest
-	if err := readRequest(r, &req); err != nil {
+	if err := readRequest(h.log, r, &req); err != nil {
 		writeResponse(w, http.StatusInternalServerError, broker.ErrorResponse{Description: err.Error()})
 		return
 	}

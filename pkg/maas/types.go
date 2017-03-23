@@ -6,18 +6,21 @@ const (
 )
 
 type Flavor struct {
-	Name string  `json:"name"`
-	Uuid string `json:"uuid"`
+	Metadata Metadata `json:"metadata"`
+	Spec FlavorSpec `json:"spec"`
+}
+
+type FlavorSpec struct {
+	Type string  `json:"type"`
 	Description string  `json:"description"`
 	TemplateName string `json:"templateName"`
 	TemplateParameters map[string]string  `json:"templateParameters"`
-	Type string  `json:"type"`
 }
 
 type FlavorList struct {
 	Kind string `json:"kind"`
 	ApiVersion string `json:"apiVersion"`
-	Flavors map[string]Flavor `json:"flavors"`
+	Items []Flavor `json:"items"`
 }
 
 
@@ -31,7 +34,6 @@ type AddressSpec struct {
 	Multicast bool `json:"multicast"`
 	Flavor string `json:"flavor,omitempty"`
 	Group string `json:"group,omitempty"`
-	Uuid string `json:"uuid,omitempty"`
 }
 
 type Address struct {
@@ -40,7 +42,22 @@ type Address struct {
 }
 
 type AddressList struct {
-	Addresses map[string]AddressSpec `json:"addresses"`
+	Items []Address `json:"items"`
 }
 
 
+type Instance struct {
+	Metadata Metadata `json:"metadata"`
+	Spec InstanceSpec `json:"spec"`
+}
+
+type InstanceSpec struct {
+	Namespace string `json:"namespace"`
+	MessagingHost bool `json:"messagingHost"`
+	MQTTHost bool `json:"mqttHost"`
+	ConsoleHost bool `json:"consoleHost"`
+}
+
+type InstanceList struct {
+	Items []Instance `json:"items"`
+}

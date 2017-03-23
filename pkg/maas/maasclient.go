@@ -46,22 +46,12 @@ func (c *MaasClient) GetFlavors() ([]Flavor, error) {
 		c.log.Fatal(err)
 	}
 
-	flavors := make([]Flavor, len(flavorList.Flavors))
-	var i int = 0
-	for name := range flavorList.Flavors {
-		flavor := flavorList.Flavors[name]
-		flavor.Name = name
-		//c.log.Infof("Received flavor %v", flavor)
-		flavors[i] = flavor
-		i++
-
-	}
-	return flavors, nil
+	return flavorList.Items, nil
 }
 
 
-func (c *MaasClient) GetAddresses() ([]Address, error) {
-	resp, err := http.Get(fmt.Sprintf("%s/v3/address", c.config.Url))
+func (c *MaasClient) GetAddresses(infraID string) ([]Address, error) {
+	resp, err := http.Get(fmt.Sprintf("%s/v3/instance/%s/address", c.config.Url, infraID))
 	if err != nil {
 		panic(err)
 	}
@@ -77,26 +67,99 @@ func (c *MaasClient) GetAddresses() ([]Address, error) {
 
 	c.log.Infof("Received addresses: %+v", addressList)
 
-	addresses := make([]Address, len(addressList.Addresses))
-	var i int = 0
-	for name := range addressList.Addresses {
-		addressSpec := addressList.Addresses[name]
-		//c.log.Infof("Received addressSpec %v", addressSpec)
-		addresses[i] = Address{
-			Metadata:Metadata{
-				Name: name,
-				Uuid: addressSpec.Uuid,
-			},
-			Spec: addressSpec,
-		}
-		i++
+	return addressList.Items, nil
+}
 
+func (c *MaasClient) GetInstances() ([]Instance, error) {
+	resp, err := http.Get(fmt.Sprintf("%s/v3/instance", c.config.Url))
+	if err != nil {
+		panic(err)
 	}
-	return addresses, nil
+	defer resp.Body.Close()
+
+	decoder := json.NewDecoder(resp.Body)
+	var instanceList InstanceList
+	err = decoder.Decode(&instanceList);
+	if err == io.EOF {
+	} else if err != nil {
+		c.log.Fatal(err)
+	}
+
+	c.log.Infof("Received instances: %+v", instanceList)
+
+	return instanceList.Items, nil
+}
+
+func (c *MaasClient) GetInstance(id string) (*Instance, error) {
+	resp, err := http.Get(fmt.Sprintf("%s/v3/instance/%s", c.config.Url, id))
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+	var instance Instance
+	err = decoder.Decode(&instance);
+	if err == io.EOF {
+	} else if err != nil {
+		c.log.Fatal(err)
+	}
+
+	c.log.Infof("Got instance: %+v", instance)
+
+	return &instance, nil
+}
+
+func (c *MaasClient) ProvisionMaaSInfra(infraID string) (error) {
+	c.log.Infof("Provisioning MaaS infrastructure instance %s", infraID)
+
+	instance := Instance{
+		Metadata: Metadata{
+			Name: infraID,
+		},
+		Spec: InstanceSpec{
+			Namespace: "enmasse-" + infraID,
+		},
+	}
+
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(instance)
+
+	c.log.Infof("Sending request: %+v", b)
+	resp, err := http.Post(fmt.Sprintf("%s/v3/instance", c.config.Url), "application/json", b)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	c.log.Info("Request sent")
+
+	//buf := new(bytes.Buffer)
+	//buf.ReadFrom(resp.Body)
+	//s := buf.String()
+	//
+	//c.log.Infof("Received response: %s", s)
+
+	decoder := json.NewDecoder(resp.Body)
+
+	err = decoder.Decode(&instance);
+	if err == io.EOF {
+	} else if err != nil {
+		c.log.Fatal(err)
+	}
+
+	c.log.Infof("Received instance: %+v", instance)
+
+	return nil
 }
 
 
-func (c *MaasClient) ProvisionAddress(instanceUUID uuid.UUID, name string, storeAndForward bool, multicast bool, flavor string) (error) {
+
+func (c *MaasClient) ProvisionAddress(infraID string, instanceUUID uuid.UUID, name string, storeAndForward bool, multicast bool, flavor string) (error) {
 	c.log.Infof("Provisioning address %s of flavor %s (instance UUID: %s)", name, flavor, instanceUUID)
 
 	queue := Address{
@@ -115,7 +178,7 @@ func (c *MaasClient) ProvisionAddress(instanceUUID uuid.UUID, name string, store
 	json.NewEncoder(b).Encode(queue)
 
 	c.log.Infof("Sending request: %+v", b)
-	resp, err := http.Post(fmt.Sprintf("%s/v3/address", c.config.Url), "application/json", b)
+	resp, err := http.Post(fmt.Sprintf("%s/v3/instance/%s/address", c.config.Url, infraID), "application/json", b)
 	if err != nil {
 		panic(err)
 	}
@@ -138,17 +201,17 @@ func (c *MaasClient) ProvisionAddress(instanceUUID uuid.UUID, name string, store
 		c.log.Fatal(err)
 	}
 
-	c.log.Infof("Received addresses: %+v", addresses)
+	c.log.Infof("Addresses after provisioning: %+v", addresses)
 
 	return nil
 }
 
-func (c *MaasClient) DeprovisionAddress(instanceUUID uuid.UUID) (error) {
+func (c *MaasClient) DeprovisionAddress(infraID string, instanceUUID uuid.UUID) (error) {
 	c.log.Infof("Deprovisioning address %s", instanceUUID)
-	address, err := c.GetAddress(instanceUUID)
+	address, err := c.GetAddress(infraID, instanceUUID)
 	c.log.Infof("Address name is %s (UUID is %s)", address.Metadata.Name, address.Metadata.Uuid)
 
-	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/v3/address/%s", c.config.Url, address.Metadata.Name), nil)
+	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/v3/instance/%s/address/%s", c.config.Url, infraID, address.Metadata.Name), nil)
 	if err != nil {
 		return err
 	}
@@ -171,7 +234,7 @@ func (c *MaasClient) GetFlavor(planUUID uuid.UUID) (*Flavor, error) {
 		return nil, err
 	}
 	for _, flavor := range flavors {
-		if flavor.Uuid == planUUID.String() {
+		if flavor.Metadata.Uuid == planUUID.String() {
 			return &flavor, nil
 		}
 	}
@@ -179,8 +242,28 @@ func (c *MaasClient) GetFlavor(planUUID uuid.UUID) (*Flavor, error) {
 }
 
 
-func (c *MaasClient) GetAddress(instanceUUID uuid.UUID) (*Address, error) {
-	addresses, err := c.GetAddresses()
+// TODO: replace this with more efficient mechanism for looking up addresses across instances
+func (c *MaasClient) FindAddress(instanceUUID uuid.UUID) (string, *Address, error) {
+	instances, err := c.GetInstances()
+	if err != nil {
+		return "", nil, err
+	}
+
+	for _, instance := range instances {
+		infraID := instance.Metadata.Name
+		address, err := c.GetAddress(infraID, instanceUUID)
+		if err != nil {
+			return "", nil, err
+		}
+		if address != nil {
+			return infraID, address, nil
+		}
+	}
+	return "", nil, nil
+}
+
+func (c *MaasClient) GetAddress(infraID string, instanceUUID uuid.UUID) (*Address, error) {
+	addresses, err := c.GetAddresses(infraID)
 	if err != nil {
 		return nil, err
 	}

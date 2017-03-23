@@ -7,20 +7,25 @@ import (
 
 	"github.com/EnMasseProject/maas-service-broker/pkg/broker"
 	"github.com/EnMasseProject/maas-service-broker/pkg/errors"
-	"log"
 	"strconv"
 	"github.com/op/go-logging"
 )
 
-func readRequest(r *http.Request, obj interface{}) error {
+func readRequest(log *logging.Logger, r *http.Request, obj interface{}) error {
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
 		return errors.NewBadRequest("error: invalid content-type: " + contentType)
 	}
 
-	err := json.NewDecoder(r.Body).Decode(&obj)
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r.Body)
+
+	reader := bytes.NewReader(buf.Bytes())
+	log.Infof("Request body: ", buf.String())
+
+	err := json.NewDecoder(reader).Decode(&obj)
 	if err != nil {
-		log.Println("Could not parse request body: " + err.Error())
+		log.Info("Could not parse request body: " + err.Error())
 		return errors.NewBadRequest("could not parse request body : " + err.Error())
 	}
 

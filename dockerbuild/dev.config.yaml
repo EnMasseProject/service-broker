@@ -1,6 +1,4 @@
 ---
-maas:
-  url: http://10.34.124.250:32211
 log:
   logfile: /dev/null
   stdout: true
