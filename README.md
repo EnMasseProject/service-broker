@@ -53,7 +53,7 @@ An [Open Service Broker](https://github.com/openservicebrokerapi/servicebroker) 
   - `sc create -f https://raw.githubusercontent.com/EnMasseProject/service-broker/master/examples/service-catalog/binding-queue.yaml -n my-messaging-project`
 - Verify the binding's status:
   - `sc get bindings -o yaml
-` - The status.conditions.message property should show "Injected bind result"
+  - The status.conditions.message property should show "Injected bind result"
 - Verify the secret has been created:
   - `oc get secret my-vanilla-queue -o yaml`
 
