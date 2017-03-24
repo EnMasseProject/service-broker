@@ -6,10 +6,24 @@
       "kind": "Instance",
       "apiVersion": "v3",
       "metadata": {
-        "name": "my-instance"
+        "name": "dff07f4e"
       },
       "spec": {
-        "namespace": "enmasse-my-instance"
+        "namespace": "enmasse-dff07f4e",
+        "messagingHost": "messaging-enmasse-dff07f4e.example.com",
+        "mqttHost": "mqtt-enmasse-dff07f4e.example.com"
+      }
+    },
+    {
+      "kind": "Instance",
+      "apiVersion": "v3",
+      "metadata": {
+        "name": "63a14329"
+      },
+      "spec": {
+        "namespace": "enmasse-63a14329",
+        "messagingHost": "messaging-enmasse-63a14329.example.com",
+        "mqttHost": "mqtt-enmasse-63a14329.example.com"
       }
     }
   ]

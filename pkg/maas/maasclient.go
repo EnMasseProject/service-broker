@@ -1,28 +1,28 @@
 package maas
 
 import (
-	"net/http"
-	"encoding/json"
-	"io"
-	"github.com/op/go-logging"
-	"fmt"
 	"bytes"
+	"encoding/json"
+	"fmt"
+	"github.com/op/go-logging"
 	"github.com/pborman/uuid"
+	"io"
+	"net/http"
 )
 
 type MaasClientConfig struct {
-	Url  string
+	Url string
 }
 
 type MaasClient struct {
 	config MaasClientConfig
-	log      *logging.Logger
+	log    *logging.Logger
 }
 
 func NewMaasClient(config MaasClientConfig, log *logging.Logger) (*MaasClient, error) {
 	client := &MaasClient{
 		config: config,
-		log: log,
+		log:    log,
 	}
 
 	log.Notice("MaaS API Server is at %s", config.Url)
@@ -40,7 +40,7 @@ func (c *MaasClient) GetFlavors() ([]Flavor, error) {
 	decoder := json.NewDecoder(resp.Body)
 	var flavorList FlavorList
 
-	err = decoder.Decode(&flavorList);
+	err = decoder.Decode(&flavorList)
 	if err == io.EOF {
 	} else if err != nil {
 		c.log.Fatal(err)
@@ -48,7 +48,6 @@ func (c *MaasClient) GetFlavors() ([]Flavor, error) {
 
 	return flavorList.Items, nil
 }
-
 
 func (c *MaasClient) GetAddresses(infraID string) ([]Address, error) {
 	resp, err := http.Get(fmt.Sprintf("%s/v3/instance/%s/address", c.config.Url, infraID))
@@ -59,7 +58,7 @@ func (c *MaasClient) GetAddresses(infraID string) ([]Address, error) {
 
 	decoder := json.NewDecoder(resp.Body)
 	var addressList AddressList
-	err = decoder.Decode(&addressList);
+	err = decoder.Decode(&addressList)
 	if err == io.EOF {
 	} else if err != nil {
 		c.log.Fatal(err)
@@ -79,7 +78,7 @@ func (c *MaasClient) GetInstances() ([]Instance, error) {
 
 	decoder := json.NewDecoder(resp.Body)
 	var instanceList InstanceList
-	err = decoder.Decode(&instanceList);
+	err = decoder.Decode(&instanceList)
 	if err == io.EOF {
 	} else if err != nil {
 		c.log.Fatal(err)
@@ -103,7 +102,7 @@ func (c *MaasClient) GetInstance(id string) (*Instance, error) {
 
 	decoder := json.NewDecoder(resp.Body)
 	var instance Instance
-	err = decoder.Decode(&instance);
+	err = decoder.Decode(&instance)
 	if err == io.EOF {
 	} else if err != nil {
 		c.log.Fatal(err)
@@ -114,7 +113,7 @@ func (c *MaasClient) GetInstance(id string) (*Instance, error) {
 	return &instance, nil
 }
 
-func (c *MaasClient) ProvisionMaaSInfra(infraID string) (error) {
+func (c *MaasClient) ProvisionMaaSInfra(infraID string) error {
 	c.log.Infof("Provisioning MaaS infrastructure instance %s", infraID)
 
 	instance := Instance{
@@ -146,7 +145,7 @@ func (c *MaasClient) ProvisionMaaSInfra(infraID string) (error) {
 
 	decoder := json.NewDecoder(resp.Body)
 
-	err = decoder.Decode(&instance);
+	err = decoder.Decode(&instance)
 	if err == io.EOF {
 	} else if err != nil {
 		c.log.Fatal(err)
@@ -157,20 +156,18 @@ func (c *MaasClient) ProvisionMaaSInfra(infraID string) (error) {
 	return nil
 }
 
-
-
-func (c *MaasClient) ProvisionAddress(infraID string, instanceUUID uuid.UUID, name string, storeAndForward bool, multicast bool, flavor string) (error) {
+func (c *MaasClient) ProvisionAddress(infraID string, instanceUUID uuid.UUID, name string, storeAndForward bool, multicast bool, flavor string) error {
 	c.log.Infof("Provisioning address %s of flavor %s (instance UUID: %s)", name, flavor, instanceUUID)
 
 	queue := Address{
 		Metadata: Metadata{
-			Name:name,
+			Name: name,
 			Uuid: instanceUUID.String(),
 		},
 		Spec: AddressSpec{
 			StoreAndForward: storeAndForward,
-			Multicast: multicast,
-			Flavor: flavor,
+			Multicast:       multicast,
+			Flavor:          flavor,
 		},
 	}
 
@@ -195,7 +192,7 @@ func (c *MaasClient) ProvisionAddress(infraID string, instanceUUID uuid.UUID, na
 	decoder := json.NewDecoder(resp.Body)
 
 	var addresses AddressList
-	err = decoder.Decode(&addresses);
+	err = decoder.Decode(&addresses)
 	if err == io.EOF {
 	} else if err != nil {
 		c.log.Fatal(err)
@@ -206,7 +203,7 @@ func (c *MaasClient) ProvisionAddress(infraID string, instanceUUID uuid.UUID, na
 	return nil
 }
 
-func (c *MaasClient) DeprovisionAddress(infraID string, instanceUUID uuid.UUID) (error) {
+func (c *MaasClient) DeprovisionAddress(infraID string, instanceUUID uuid.UUID) error {
 	c.log.Infof("Deprovisioning address %s", instanceUUID)
 	address, err := c.GetAddress(infraID, instanceUUID)
 	c.log.Infof("Address name is %s (UUID is %s)", address.Metadata.Name, address.Metadata.Uuid)
@@ -223,10 +220,8 @@ func (c *MaasClient) DeprovisionAddress(infraID string, instanceUUID uuid.UUID) 
 
 	c.log.Infof("Received response: %+v", resp)
 
-
 	return nil
 }
-
 
 func (c *MaasClient) GetFlavor(planUUID uuid.UUID) (*Flavor, error) {
 	flavors, err := c.GetFlavors()
@@ -241,25 +236,24 @@ func (c *MaasClient) GetFlavor(planUUID uuid.UUID) (*Flavor, error) {
 	return nil, nil
 }
 
-
 // TODO: replace this with more efficient mechanism for looking up addresses across instances
-func (c *MaasClient) FindAddress(instanceUUID uuid.UUID) (string, *Address, error) {
+func (c *MaasClient) FindAddress(instanceUUID uuid.UUID) (*Instance, *Address, error) {
 	instances, err := c.GetInstances()
 	if err != nil {
-		return "", nil, err
+		return nil, nil, err
 	}
 
 	for _, instance := range instances {
 		infraID := instance.Metadata.Name
 		address, err := c.GetAddress(infraID, instanceUUID)
 		if err != nil {
-			return "", nil, err
+			return nil, nil, err
 		}
 		if address != nil {
-			return infraID, address, nil
+			return &instance, address, nil
 		}
 	}
-	return "", nil, nil
+	return nil, nil, nil
 }
 
 func (c *MaasClient) GetAddress(infraID string, instanceUUID uuid.UUID) (*Address, error) {
@@ -275,4 +269,3 @@ func (c *MaasClient) GetAddress(infraID string, instanceUUID uuid.UUID) (*Addres
 	return nil, nil
 
 }
-

@@ -7,15 +7,16 @@ import (
 
 	"github.com/EnMasseProject/maas-service-broker/pkg/broker"
 	"github.com/EnMasseProject/maas-service-broker/pkg/errors"
-	"strconv"
 	"github.com/op/go-logging"
+	"strconv"
 )
 
 func readRequest(log *logging.Logger, r *http.Request, obj interface{}) error {
-	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
-		return errors.NewBadRequest("error: invalid content-type: " + contentType)
-	}
+	// TODO: uncomment this when the service catalog controller starts setting the content-type properly
+	//contentType := r.Header.Get("Content-Type")
+	//if contentType != "application/json" {
+	//	return errors.NewBadRequest("error: invalid content-type: " + contentType)
+	//}
 
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
@@ -63,6 +64,6 @@ func writeErrorResponse(w http.ResponseWriter, err error, log *logging.Logger) e
 		return writeResponse(w, brokerError.Status, broker.NewErrorResponse(brokerError.Description))
 	} else {
 		log.Warning("Sending internal error response: " + err.Error())
-		return writeResponse(w, http.StatusInternalServerError, broker.NewErrorResponse("Unknown error: " + err.Error()))
+		return writeResponse(w, http.StatusInternalServerError, broker.NewErrorResponse("Unknown error: "+err.Error()))
 	}
 }

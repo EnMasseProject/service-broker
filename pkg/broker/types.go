@@ -103,6 +103,9 @@ type BindResponse struct {
 	VolumeMounts    []interface{}          `json:"volume_mounts,omitempty"`
 }
 
+type UnbindResponse struct {
+}
+
 type DeprovisionResponse struct {
 	Operation string `json:"operation,omitempty"`
 }

@@ -1,11 +1,11 @@
 package broker
 
 import (
+	"github.com/EnMasseProject/maas-service-broker/pkg/errors"
 	"github.com/EnMasseProject/maas-service-broker/pkg/maas"
+	"github.com/kubernetes-incubator/service-catalog/.glide/cache/src/https-k8s.io-kubernetes/pkg/util/strings"
 	"github.com/op/go-logging"
 	"github.com/pborman/uuid"
-	"github.com/EnMasseProject/maas-service-broker/pkg/errors"
-	"github.com/kubernetes-incubator/service-catalog/.glide/cache/src/https-k8s.io-kubernetes/pkg/util/strings"
 )
 
 type Broker interface {
@@ -19,14 +19,12 @@ type Broker interface {
 }
 
 type MaasBroker struct {
-	log      *logging.Logger
-	client   *maas.MaasClient
+	log    *logging.Logger
+	client *maas.MaasClient
 }
-
 
 // HACK: needed for deprovisioning; TODO: needs to be replaced with proper storage or removed
 var infraIDs map[*uuid.UUID]string = make(map[*uuid.UUID]string)
-
 
 func NewMaasBroker(
 	log *logging.Logger,
@@ -55,30 +53,30 @@ func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 	b.log.Info("MaaSBroker::Catalog")
 
 	queueService := Service{
-		ID:   uuid.Parse(QueueServiceUUID),
-		Name: "queue",
+		ID:          uuid.Parse(QueueServiceUUID),
+		Name:        "queue",
 		Description: "A messaging queue",
-		Bindable: false,
-		Plans: []Plan{},
-		Metadata: make(map[string]interface{}),
+		Bindable:    false,
+		Plans:       []Plan{},
+		Metadata:    make(map[string]interface{}),
 	}
 
 	topicService := Service{
-		ID:   uuid.Parse(TopicServiceUUID),
-		Name: "topic",
+		ID:          uuid.Parse(TopicServiceUUID),
+		Name:        "topic",
 		Description: "A messaging topic",
-		Bindable: false,
-		Plans: []Plan{},
-		Metadata: make(map[string]interface{}),
+		Bindable:    false,
+		Plans:       []Plan{},
+		Metadata:    make(map[string]interface{}),
 	}
 
 	flavors, err := b.client.GetFlavors()
 	if err != nil {
-		b.log.Warning("Could not get flavors from MaaS API server: %s", err.Error())	// TODO: fail here instead of returning any/multicast only?
+		b.log.Warning("Could not get flavors from MaaS API server: %s", err.Error()) // TODO: fail here instead of returning any/multicast only?
 	}
 
 	b.log.Info("Processing flavors")
-	for _,flavor := range flavors {
+	for _, flavor := range flavors {
 		b.log.Info("Flavor: %s (%s)", flavor.Metadata.Name, flavor.Spec.Description)
 		plan := Plan{
 			ID:          uuid.Parse(flavor.Metadata.Uuid),
@@ -98,15 +96,15 @@ func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 	anycastService := Service{
 		ID:          uuid.Parse(AnycastServiceUUID),
 		Name:        "direct-anycast-network",
-			Description: "A brokerless network for direct anycast messaging",
-			Bindable:    false,
-			Plans: []Plan{{
+		Description: "A brokerless network for direct anycast messaging",
+		Bindable:    false,
+		Plans: []Plan{{
 			ID:          uuid.Parse("914e9acc-242e-42e3-8995-4ec90d928c2b"),
 			Name:        "default",
 			Description: "Default plan",
 			Free:        true,
 		}},
-			Metadata: make(map[string]interface{}),
+		Metadata: make(map[string]interface{}),
 	}
 
 	multicastService := Service{
@@ -169,9 +167,9 @@ func (b MaasBroker) Provision(instanceUUID uuid.UUID, req *ProvisionRequest) (*P
 
 	switch req.ServiceID.String() {
 	case AnycastServiceUUID:
-		b.client.ProvisionAddress(infraID, instanceUUID, name, false, false,"")
+		b.client.ProvisionAddress(infraID, instanceUUID, name, false, false, "")
 	case MulticastServiceUUID:
-		b.client.ProvisionAddress(infraID, instanceUUID, name, false, true,"")
+		b.client.ProvisionAddress(infraID, instanceUUID, name, false, true, "")
 	case QueueServiceUUID:
 		flavor, err := b.client.GetFlavor(req.PlanID)
 		if err != nil {
@@ -200,13 +198,12 @@ func (b MaasBroker) Provision(instanceUUID uuid.UUID, req *ProvisionRequest) (*P
 func (b MaasBroker) Deprovision(instanceUUID uuid.UUID, serviceId string, planId string) (*DeprovisionResponse, error) {
 	b.log.Info("Deprovisioning %s", instanceUUID.String())
 
-
 	//infraID := infraIDs[&instanceUUID]
 	//if infraID == "" {
 	//	return nil, errors.NewServiceInstanceGone(instanceUUID.String())
 	//}
 
-	infraID, address, err := b.client.FindAddress(instanceUUID)
+	instance, address, err := b.client.FindAddress(instanceUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +212,7 @@ func (b MaasBroker) Deprovision(instanceUUID uuid.UUID, serviceId string, planId
 		return nil, errors.NewServiceInstanceGone(instanceUUID.String())
 	}
 
-	b.client.DeprovisionAddress(infraID, instanceUUID)
+	b.client.DeprovisionAddress(instance.Metadata.Name, instanceUUID)
 
 	infraIDs[&instanceUUID] = ""
 
@@ -223,11 +220,32 @@ func (b MaasBroker) Deprovision(instanceUUID uuid.UUID, serviceId string, planId
 }
 
 func (b MaasBroker) Bind(instanceUUID uuid.UUID, bindingUUID uuid.UUID, req *BindRequest) (*BindResponse, error) {
-	return nil, notImplemented
+
+	instance, _, err := b.client.FindAddress(instanceUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	// if binding instance exists, and the parameters are the same return: 200.
+	// if binding instance exists, and the parameters are different return: 409.
+	//
+	// return 201 when we're done.
+	//
+	// once we create the binding instance, we call apb.Bind
+
+	credentials := make(map[string]interface{})
+	credentials["messagingHost"] = instance.Spec.MessagingHost
+	credentials["mqttHost"] = instance.Spec.MQTTHost
+	credentials["consoleHost"] = instance.Spec.ConsoleHost
+	credentials["namespace"] = instance.Spec.Namespace
+
+	// need to change to return the appropriate section depending on what Bind
+	// returns.
+	return &BindResponse{Credentials: credentials}, nil
 }
 
 func (b MaasBroker) Unbind(instanceUUID uuid.UUID, bindingUUID uuid.UUID) error {
-	return notImplemented
+	return nil
 }
 
 func (b MaasBroker) Update(instanceUUID uuid.UUID, req *UpdateRequest) (*UpdateResponse, error) {
