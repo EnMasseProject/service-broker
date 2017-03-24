@@ -48,6 +48,16 @@ An [Open Service Broker](https://github.com/openservicebrokerapi/servicebroker) 
     - `oc get pods -n enmasse-63a14329`
     - One of the pods should be called "my-vanilla-queue-<something>"
 
+## Binding the queue
+- Create the binding:
+  - `sc create -f https://raw.githubusercontent.com/EnMasseProject/service-broker/master/examples/service-catalog/binding-queue.yaml -n my-messaging-project`
+- Verify the binding's status:
+  - `sc get bindings -o yaml
+` - The status.conditions.message property should show "Injected bind result"
+- Verify the secret has been created:
+  - `oc get secret my-vanilla-queue -o yaml`
+
+
 ## Provisioning a topic in the same network
 - Create the service instance:
   - `sc create -f https://raw.githubusercontent.com/EnMasseProject/service-broker/master/examples/service-catalog/instance-topic.yaml -n my-messaging-project`
