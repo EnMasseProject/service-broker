@@ -53,9 +53,9 @@ type Instance struct {
 
 type InstanceSpec struct {
 	Namespace string `json:"namespace"`
-	MessagingHost bool `json:"messagingHost"`
-	MQTTHost bool `json:"mqttHost"`
-	ConsoleHost bool `json:"consoleHost"`
+	MessagingHost string `json:"messagingHost"`
+	MQTTHost string `json:"mqttHost"`
+	ConsoleHost string `json:"consoleHost"`
 }
 
 type InstanceList struct {
