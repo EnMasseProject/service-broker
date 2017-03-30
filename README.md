@@ -22,10 +22,12 @@ An [Open Service Broker](https://github.com/openservicebrokerapi/servicebroker) 
 - Register Broker in the Service Catalog:
   - `sc create -f https://raw.githubusercontent.com/EnMasseProject/service-broker/master/examples/service-catalog/broker.yaml`
 
+At this point, the Service Catalog will contact the broker and retrieve the list of services the broker is providing. 
+
 ## Verifying if the broker is registered
 - Check the status of the broker:
   - `sc get broker -o yaml`
-  - The status.conditions.message should say "Successfully fetched catalog from broker"
+  - The `status.conditions.message` should say "Successfully fetched catalog from broker"
 - Check if there are four service classes:
   - `sc get serviceclasses`
   - The list should include a "queue" and a "topic" class as well as two "direct-*" classes
@@ -37,7 +39,7 @@ An [Open Service Broker](https://github.com/openservicebrokerapi/servicebroker) 
   - `sc create -f https://raw.githubusercontent.com/EnMasseProject/service-broker/master/examples/service-catalog/instance-queue.yaml -n my-messaging-project`
 - Check the service instance's status:
   - `sc get instances -n my-messaging-project -o yaml`
-  - The status.conditions.message should show "The instance was provisioned successfully"
+  - The `status.conditions.message` should show "The instance was provisioned successfully"
 - Verify the MaaS infra pods and the broker pod have been created:
   - Login as admin:
     - `oc login -u admin`
@@ -53,7 +55,7 @@ An [Open Service Broker](https://github.com/openservicebrokerapi/servicebroker) 
   - `sc create -f https://raw.githubusercontent.com/EnMasseProject/service-broker/master/examples/service-catalog/binding-queue.yaml -n my-messaging-project`
 - Verify the binding's status:
   - `sc get bindings -n my-messaging-project -o yaml`
-  - The status.conditions.message property should show "Injected bind result"
+  - The `status.conditions.message` property should show "Injected bind result"
 - Verify the secret has been created:
   - `oc get secret my-vanilla-queue -o yaml`
 
