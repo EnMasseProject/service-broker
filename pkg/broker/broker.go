@@ -24,9 +24,6 @@ type MaasBroker struct {
 	client *maas.MaasClient
 }
 
-// HACK: needed for deprovisioning; TODO: needs to be replaced with proper storage or removed
-var infraIDs map[*uuid.UUID]string = make(map[*uuid.UUID]string)
-
 func NewMaasBroker(
 	log *logging.Logger,
 	client *maas.MaasClient,
@@ -205,8 +202,6 @@ func (b MaasBroker) Provision(instanceUUID uuid.UUID, req *ProvisionRequest) (*P
 		return nil, errors.NewBrokerError(http.StatusInternalServerError, err.Error())
 	}
 
-	infraIDs[&instanceUUID] = infraID
-
 	return &ProvisionResponse{StatusCode: http.StatusCreated, Operation: "successful"}, nil
 }
 
@@ -238,11 +233,6 @@ func getServiceID(address *maas.Address) string {
 func (b MaasBroker) Deprovision(instanceUUID uuid.UUID, serviceId string, planId string) (*DeprovisionResponse, error) {
 	b.log.Info("Deprovisioning %s", instanceUUID.String())
 
-	//infraID := infraIDs[&instanceUUID]
-	//if infraID == "" {
-	//	return nil, errors.NewServiceInstanceGone(instanceUUID.String())
-	//}
-
 	instance, address, err := b.client.FindAddress(instanceUUID)
 	if err != nil {
 		return nil, err
@@ -256,8 +246,6 @@ func (b MaasBroker) Deprovision(instanceUUID uuid.UUID, serviceId string, planId
 	if err != nil {
 		return nil, errors.NewBrokerError(http.StatusInternalServerError, err.Error())
 	}
-
-	delete(infraIDs, &instanceUUID)
 
 	return &DeprovisionResponse{Operation: "successful"}, nil
 }
