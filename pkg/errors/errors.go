@@ -1,42 +1,46 @@
 package errors
 
 import (
-	"strings"
 	"net/http"
+	"strings"
 )
 
 type BrokerError struct {
-	Status int
+	Status      int
 	Description string
 }
 
-func NewServiceInstanceAlreadyExists(UUID string) (BrokerError) {
+func NewServiceInstanceAlreadyExists(UUID string) BrokerError {
 	return BrokerError{
-		Status: http.StatusConflict,
+		Status:      http.StatusConflict,
 		Description: "Service instance " + UUID + " already exists",
 	}
 }
 
-func NewServiceInstanceGone(UUID string) (BrokerError) {
+func NewServiceInstanceGone(UUID string) BrokerError {
 	return BrokerError{
-		Status: http.StatusGone,
+		Status:      http.StatusGone,
 		Description: "Service instance " + UUID + " is gone",
 	}
 }
 
 func NewBadRequest(Description string) BrokerError {
 	return BrokerError{
-		Status: http.StatusBadRequest,
+		Status:      http.StatusBadRequest,
 		Description: Description,
 	}
 }
 
+func NewBrokerError(statusCode int, Description string) BrokerError {
+	return BrokerError{
+		Status:      statusCode,
+		Description: Description,
+	}
+}
 
 func (e BrokerError) Error() string {
 	return e.Description
 }
-
-
 
 type Errors []error
 

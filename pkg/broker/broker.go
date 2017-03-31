@@ -184,21 +184,25 @@ func (b MaasBroker) Provision(instanceUUID uuid.UUID, req *ProvisionRequest) (*P
 
 	switch req.ServiceID.String() {
 	case AnycastServiceUUID:
-		b.client.ProvisionAddress(infraID, instanceUUID, name, false, false, "")
+		err = b.client.ProvisionAddress(infraID, instanceUUID, name, false, false, "")
 	case MulticastServiceUUID:
-		b.client.ProvisionAddress(infraID, instanceUUID, name, false, true, "")
+		err = b.client.ProvisionAddress(infraID, instanceUUID, name, false, true, "")
 	case QueueServiceUUID:
 		if flavor == nil || flavor.Spec.Type != maas.Queue {
 			return nil, errors.NewBadRequest("Invalid plan ID " + req.PlanID.String())
 		}
-		b.client.ProvisionAddress(infraID, instanceUUID, name, true, false, flavor.Metadata.Name)
+		err = b.client.ProvisionAddress(infraID, instanceUUID, name, true, false, flavor.Metadata.Name)
 	case TopicServiceUUID:
 		if flavor == nil || flavor.Spec.Type != maas.Topic {
 			return nil, errors.NewBadRequest("Invalid plan ID " + req.PlanID.String())
 		}
-		b.client.ProvisionAddress(infraID, instanceUUID, name, true, true, flavor.Metadata.Name)
+		err = b.client.ProvisionAddress(infraID, instanceUUID, name, true, true, flavor.Metadata.Name)
 	default:
 		return nil, errors.NewBadRequest("Unknown service ID " + req.ServiceID.String())
+	}
+
+	if err != nil {
+		return nil, errors.NewBrokerError(http.StatusInternalServerError, err.Error())
 	}
 
 	infraIDs[&instanceUUID] = infraID

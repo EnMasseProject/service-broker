@@ -38,6 +38,11 @@ func (c *MaasClient) GetFlavors() ([]Flavor, error) {
 	if err != nil {
 		return []Flavor{}, err
 	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(fmt.Sprintf("Received error from MaaS API server: %d", resp.StatusCode))
+	}
 
 	var flavorList FlavorList
 	err = decodeJSON(resp, &flavorList)
@@ -55,6 +60,10 @@ func (c *MaasClient) GetAddresses(infraID string) ([]Address, error) {
 		panic(err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(fmt.Sprintf("Received error from MaaS API server: %d", resp.StatusCode))
+	}
 
 	var addressList AddressList
 	err = decodeJSON(resp, &addressList)
@@ -75,6 +84,10 @@ func (c *MaasClient) GetInstances() ([]Instance, error) {
 		panic(err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(fmt.Sprintf("Received error from MaaS API server: %d", resp.StatusCode))
+	}
 
 	var instanceList InstanceList
 	err = decodeJSON(resp, &instanceList)
@@ -98,6 +111,8 @@ func (c *MaasClient) GetInstance(id string) (*Instance, error) {
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil
+	} else if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(fmt.Sprintf("Received error from MaaS API server: %d", resp.StatusCode))
 	}
 
 	var instance Instance
@@ -133,7 +148,9 @@ func (c *MaasClient) ProvisionMaaSInfra(infraID string) error {
 	}
 	defer resp.Body.Close()
 
-	c.log.Info("Request sent")
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("Received error from MaaS API server: %d", resp.StatusCode))
+	}
 
 	//buf := new(bytes.Buffer)
 	//buf.ReadFrom(resp.Body)
@@ -176,21 +193,15 @@ func (c *MaasClient) ProvisionAddress(infraID string, instanceUUID uuid.UUID, na
 	}
 	defer resp.Body.Close()
 
-	c.log.Infof("Response code: %d", resp.StatusCode)
-
-	//buf := new(bytes.Buffer)
-	//buf.ReadFrom(resp.Body)
-	//s := buf.String()
-	//
-	//c.log.Infof("Received response: %s", s)
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("Received error from MaaS API server: %d", resp.StatusCode))
+	}
 
 	var addresses AddressList
 	err = decodeJSON(resp, &addresses)
 	if err != nil {
 		return err
 	}
-
-	c.log.Infof("Addresses after provisioning: %+v", addresses)
 
 	return nil
 }
@@ -208,6 +219,10 @@ func (c *MaasClient) DeprovisionAddress(infraID string, instanceUUID uuid.UUID) 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("Received error from MaaS API server: %d", resp.StatusCode))
 	}
 
 	c.log.Infof("Received response: %+v", resp)
