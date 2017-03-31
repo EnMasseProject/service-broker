@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/op/go-logging"
 	"github.com/pborman/uuid"
+	"github.com/pkg/errors"
 	"io"
 	"net/http"
 )
@@ -31,37 +32,34 @@ func NewMaasClient(config MaasClientConfig, log *logging.Logger) (*MaasClient, e
 }
 
 func (c *MaasClient) GetFlavors() ([]Flavor, error) {
+	c.log.Infof("Getting flavors")
+
 	resp, err := http.Get(fmt.Sprintf("%s/v3/flavor", c.config.Url))
 	if err != nil {
 		return []Flavor{}, err
 	}
-	defer resp.Body.Close()
 
-	decoder := json.NewDecoder(resp.Body)
 	var flavorList FlavorList
-
-	err = decoder.Decode(&flavorList)
-	if err == io.EOF {
-	} else if err != nil {
-		c.log.Fatal(err)
+	err = decodeJSON(resp, &flavorList)
+	if err != nil {
+		return nil, err
 	}
-
 	return flavorList.Items, nil
 }
 
 func (c *MaasClient) GetAddresses(infraID string) ([]Address, error) {
+	c.log.Infof("Getting addresses")
+
 	resp, err := http.Get(fmt.Sprintf("%s/v3/instance/%s/address", c.config.Url, infraID))
 	if err != nil {
 		panic(err)
 	}
 	defer resp.Body.Close()
 
-	decoder := json.NewDecoder(resp.Body)
 	var addressList AddressList
-	err = decoder.Decode(&addressList)
-	if err == io.EOF {
-	} else if err != nil {
-		c.log.Fatal(err)
+	err = decodeJSON(resp, &addressList)
+	if err != nil {
+		return nil, err
 	}
 
 	c.log.Infof("Received addresses: %+v", addressList)
@@ -70,18 +68,18 @@ func (c *MaasClient) GetAddresses(infraID string) ([]Address, error) {
 }
 
 func (c *MaasClient) GetInstances() ([]Instance, error) {
+	c.log.Infof("Getting instances")
+
 	resp, err := http.Get(fmt.Sprintf("%s/v3/instance", c.config.Url))
 	if err != nil {
 		panic(err)
 	}
 	defer resp.Body.Close()
 
-	decoder := json.NewDecoder(resp.Body)
 	var instanceList InstanceList
-	err = decoder.Decode(&instanceList)
-	if err == io.EOF {
-	} else if err != nil {
-		c.log.Fatal(err)
+	err = decodeJSON(resp, &instanceList)
+	if err != nil {
+		return nil, err
 	}
 
 	c.log.Infof("Received instances: %+v", instanceList)
@@ -90,6 +88,8 @@ func (c *MaasClient) GetInstances() ([]Instance, error) {
 }
 
 func (c *MaasClient) GetInstance(id string) (*Instance, error) {
+	c.log.Infof("Getting instance with id %s", id)
+
 	resp, err := http.Get(fmt.Sprintf("%s/v3/instance/%s", c.config.Url, id))
 	if err != nil {
 		panic(err)
@@ -100,12 +100,10 @@ func (c *MaasClient) GetInstance(id string) (*Instance, error) {
 		return nil, nil
 	}
 
-	decoder := json.NewDecoder(resp.Body)
 	var instance Instance
-	err = decoder.Decode(&instance)
-	if err == io.EOF {
-	} else if err != nil {
-		c.log.Fatal(err)
+	err = decodeJSON(resp, &instance)
+	if err != nil {
+		return nil, err
 	}
 
 	c.log.Infof("Got instance: %+v", instance)
@@ -143,12 +141,9 @@ func (c *MaasClient) ProvisionMaaSInfra(infraID string) error {
 	//
 	//c.log.Infof("Received response: %s", s)
 
-	decoder := json.NewDecoder(resp.Body)
-
-	err = decoder.Decode(&instance)
-	if err == io.EOF {
-	} else if err != nil {
-		c.log.Fatal(err)
+	err = decodeJSON(resp, &instance)
+	if err != nil {
+		return err
 	}
 
 	c.log.Infof("Received instance: %+v", instance)
@@ -181,7 +176,7 @@ func (c *MaasClient) ProvisionAddress(infraID string, instanceUUID uuid.UUID, na
 	}
 	defer resp.Body.Close()
 
-	c.log.Info("Request sent")
+	c.log.Infof("Response code: %d", resp.StatusCode)
 
 	//buf := new(bytes.Buffer)
 	//buf.ReadFrom(resp.Body)
@@ -189,13 +184,10 @@ func (c *MaasClient) ProvisionAddress(infraID string, instanceUUID uuid.UUID, na
 	//
 	//c.log.Infof("Received response: %s", s)
 
-	decoder := json.NewDecoder(resp.Body)
-
 	var addresses AddressList
-	err = decoder.Decode(&addresses)
-	if err == io.EOF {
-	} else if err != nil {
-		c.log.Fatal(err)
+	err = decodeJSON(resp, &addresses)
+	if err != nil {
+		return err
 	}
 
 	c.log.Infof("Addresses after provisioning: %+v", addresses)
@@ -268,4 +260,14 @@ func (c *MaasClient) GetAddress(infraID string, instanceUUID uuid.UUID) (*Addres
 	}
 	return nil, nil
 
+}
+
+func decodeJSON(resp *http.Response, out interface{}) error {
+	defer resp.Body.Close()
+	decoder := json.NewDecoder(resp.Body)
+	err := decoder.Decode(&out)
+	if err != nil && err != io.EOF {
+		return errors.New("Could not parse JSON response from MaaS: " + err.Error())
+	}
+	return nil
 }

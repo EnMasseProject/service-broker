@@ -1,0 +1,9 @@
+{
+  "service_id": "7739ea7d-8de4-4fe8-8297-90f703904589",
+  "plan_id": "83fc2eaf-d968-4f7d-bbcd-da697ca9232c",
+  "organization_guid": "dff07f4e-8dc2-43d9-a313-fec2ca3b90fc",
+  "space_guid": "2804304c-5201-49bc-bc24-b398cf0933a6",
+  "parameters": {
+    "name": "my-vanilla-queue2"
+  }
+}

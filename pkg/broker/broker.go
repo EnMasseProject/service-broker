@@ -6,6 +6,7 @@ import (
 	"github.com/kubernetes-incubator/service-catalog/.glide/cache/src/https-k8s.io-kubernetes/pkg/util/strings"
 	"github.com/op/go-logging"
 	"github.com/pborman/uuid"
+	"net/http"
 )
 
 type Broker interface {
@@ -44,10 +45,15 @@ func (b MaasBroker) Bootstrap() (*BootstrapResponse, error) {
 	return &BootstrapResponse{}, nil
 }
 
-const AnycastServiceUUID = "ac6348d6-eeea-43e5-9b97-5ed18da5dcaf"
-const MulticastServiceUUID = "7739ea7d-8de4-4fe8-8297-90f703904587"
-const QueueServiceUUID = "7739ea7d-8de4-4fe8-8297-90f703904589"
-const TopicServiceUUID = "7739ea7d-8de4-4fe8-8297-90f703904590"
+const (
+	AnycastServiceUUID   = "ac6348d6-eeea-43e5-9b97-5ed18da5dcaf"
+	MulticastServiceUUID = "7739ea7d-8de4-4fe8-8297-90f703904587"
+	QueueServiceUUID     = "7739ea7d-8de4-4fe8-8297-90f703904589"
+	TopicServiceUUID     = "7739ea7d-8de4-4fe8-8297-90f703904590"
+
+	AnycastPlanUUID   = "914e9acc-242e-42e3-8995-4ec90d928c2b"
+	MulticastPlanUUID = "6373d6b9-b701-4636-a5ff-dc5b835c9223"
+)
 
 func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 	b.log.Info("MaaSBroker::Catalog")
@@ -99,7 +105,7 @@ func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 		Description: "A brokerless network for direct anycast messaging",
 		Bindable:    false,
 		Plans: []Plan{{
-			ID:          uuid.Parse("914e9acc-242e-42e3-8995-4ec90d928c2b"),
+			ID:          uuid.Parse(AnycastPlanUUID),
 			Name:        "default",
 			Description: "Default plan",
 			Free:        true,
@@ -113,7 +119,7 @@ func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 		Description: "A brokerless network for direct multicast messaging",
 		Bindable:    false,
 		Plans: []Plan{{
-			ID:          uuid.Parse("6373d6b9-b701-4636-a5ff-dc5b835c9223"),
+			ID:          uuid.Parse(MulticastPlanUUID),
 			Name:        "default",
 			Description: "Default plan",
 			Free:        true,
@@ -150,19 +156,30 @@ func (b MaasBroker) Provision(instanceUUID uuid.UUID, req *ProvisionRequest) (*P
 	// TODO: this is a temporary hack needed because otherwise the resulting address configmap name is too long
 	infraID := strings.ShortenString(req.OrganizationID, 8)
 
-	address, err := b.client.GetAddress(infraID, instanceUUID)
+	flavor, err := b.getFlavor(req)
 	if err != nil {
 		return nil, err
 	}
-	if address != nil {
-		// TODO: verify if parameters are different & return HTTP status Conflict or OK if they haven't
-		return &ProvisionResponse{Operation: "successful"}, nil
-		//return nil, errors.NewServiceInstanceAlreadyExists(instanceUUID.String())
+
+	address, err := b.client.GetAddress(infraID, instanceUUID)
+	if err != nil {
+		return nil, err
 	}
 
 	name := req.Parameters["name"]
 	if name == "" {
 		return nil, errors.NewBadRequest("Missing parameter: name")
+	}
+
+	if address != nil {
+		if req.ServiceID.String() == getServiceID(address) &&
+			flavor.Metadata.Name == address.Spec.Flavor &&
+			name == address.Metadata.Name {
+
+			return &ProvisionResponse{StatusCode: http.StatusOK, Operation: "successful"}, nil
+		} else {
+			return nil, errors.NewServiceInstanceAlreadyExists(instanceUUID.String())
+		}
 	}
 
 	switch req.ServiceID.String() {
@@ -171,18 +188,12 @@ func (b MaasBroker) Provision(instanceUUID uuid.UUID, req *ProvisionRequest) (*P
 	case MulticastServiceUUID:
 		b.client.ProvisionAddress(infraID, instanceUUID, name, false, true, "")
 	case QueueServiceUUID:
-		flavor, err := b.client.GetFlavor(req.PlanID)
-		if err != nil {
-			return nil, err
-		} else if flavor == nil || flavor.Spec.Type != maas.Queue {
+		if flavor == nil || flavor.Spec.Type != maas.Queue {
 			return nil, errors.NewBadRequest("Invalid plan ID " + req.PlanID.String())
 		}
 		b.client.ProvisionAddress(infraID, instanceUUID, name, true, false, flavor.Metadata.Name)
 	case TopicServiceUUID:
-		flavor, _ := b.client.GetFlavor(req.PlanID)
-		if err != nil {
-			return nil, err
-		} else if flavor == nil || flavor.Spec.Type != maas.Topic {
+		if flavor == nil || flavor.Spec.Type != maas.Topic {
 			return nil, errors.NewBadRequest("Invalid plan ID " + req.PlanID.String())
 		}
 		b.client.ProvisionAddress(infraID, instanceUUID, name, true, true, flavor.Metadata.Name)
@@ -192,7 +203,32 @@ func (b MaasBroker) Provision(instanceUUID uuid.UUID, req *ProvisionRequest) (*P
 
 	infraIDs[&instanceUUID] = infraID
 
-	return &ProvisionResponse{Operation: "successful"}, nil
+	return &ProvisionResponse{StatusCode: http.StatusCreated, Operation: "successful"}, nil
+}
+
+func (b MaasBroker) getFlavor(req *ProvisionRequest) (*maas.Flavor, error) {
+	switch req.ServiceID.String() {
+	case AnycastServiceUUID, MulticastServiceUUID:
+		return nil, nil
+	default:
+		return b.client.GetFlavor(req.PlanID)
+	}
+}
+
+func getServiceID(address *maas.Address) string {
+	if address.Spec.StoreAndForward {
+		if address.Spec.Multicast {
+			return TopicServiceUUID
+		} else {
+			return QueueServiceUUID
+		}
+	} else {
+		if address.Spec.Multicast {
+			return MulticastServiceUUID
+		} else {
+			return AnycastServiceUUID
+		}
+	}
 }
 
 func (b MaasBroker) Deprovision(instanceUUID uuid.UUID, serviceId string, planId string) (*DeprovisionResponse, error) {

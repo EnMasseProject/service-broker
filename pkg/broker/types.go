@@ -64,6 +64,7 @@ type ProvisionRequest struct {
 }
 
 type ProvisionResponse struct {
+	StatusCode   int    `json:"-"`
 	DashboardURL string `json:"dashboard_url,omitempty"`
 	Operation    string `json:"operation,omitempty"`
 }

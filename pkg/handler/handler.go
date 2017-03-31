@@ -5,15 +5,15 @@ import (
 
 	"github.com/EnMasseProject/maas-service-broker/pkg/broker"
 	"github.com/gorilla/mux"
-	"github.com/pborman/uuid"
 	"github.com/op/go-logging"
+	"github.com/pborman/uuid"
 )
 
 // TODO: implement asynchronous operations
 // TODO: authentication / authorization
 
 type handler struct {
-	log *logging.Logger
+	log    *logging.Logger
 	router mux.Router
 	broker broker.Broker
 }
@@ -74,7 +74,11 @@ func (h handler) provision(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, err := h.broker.Provision(instanceUUID, req)
-	writeDefaultResponse(w, http.StatusCreated, resp, err, h.log)
+	if resp != nil {
+		writeDefaultResponse(w, resp.StatusCode, resp, err, h.log)
+	} else {
+		writeDefaultResponse(w, 0, resp, err, h.log)
+	}
 }
 
 func (h handler) update(w http.ResponseWriter, r *http.Request) {
@@ -129,7 +133,7 @@ func (h handler) deprovision(w http.ResponseWriter, r *http.Request) {
 	//if errors.IsNotFound(err) {
 	//	writeResponse(w, http.StatusGone, broker.DeprovisionResponse{})
 	//} else {
-		writeDefaultResponse(w, http.StatusOK, resp, err, h.log)
+	writeDefaultResponse(w, http.StatusOK, resp, err, h.log)
 	//}
 }
 
@@ -179,7 +183,7 @@ func (h handler) unbind(w http.ResponseWriter, r *http.Request) {
 	//if errors.IsNotFound(err) {
 	//	writeResponse(w, http.StatusGone, struct{}{})
 	//} else {
-		writeDefaultResponse(w, http.StatusOK, struct{}{}, err, h.log)
+	writeDefaultResponse(w, http.StatusOK, struct{}{}, err, h.log)
 	//}
 	return
 }
