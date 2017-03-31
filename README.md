@@ -16,7 +16,7 @@ An [Open Service Broker](https://github.com/openservicebrokerapi/servicebroker) 
 - Deploy MaaS Broker
   - `oc create -f https://raw.githubusercontent.com/EnMasseProject/service-broker/master/kubernetes-resources/maas-broker-deployment.yaml`
 - Get kubectl 1.6+ (older versions won't work with the Service Catalog API server):
-  - `curl -o kubectl https://storage.googleapis.com/kubernetes-release/release/v1.6.0-beta.4/bin/linux/amd64/kubectl ; chmod +x ./kubectl` (replace linux with darwin if using MacOS)
+  - `curl -o kubectl https://storage.googleapis.com/kubernetes-release/release/v1.6.0/bin/linux/amd64/kubectl ; chmod +x ./kubectl` (replace linux with darwin if using MacOS)
 - Configure sc alias and make it connect to the Service Catalog API server:
   - `alias sc="$(pwd)/kubectl --server=https://$(oc get route apiserver -n enmasse -o jsonpath=\"{.spec.host}\") --insecure-skip-tls-verify"`
 - Register Broker in the Service Catalog:
