@@ -257,7 +257,7 @@ func (b MaasBroker) Deprovision(instanceUUID uuid.UUID, serviceId string, planId
 		return nil, errors.NewBrokerError(http.StatusInternalServerError, err.Error())
 	}
 
-	infraIDs[&instanceUUID] = ""
+	delete(infraIDs, &instanceUUID)
 
 	return &DeprovisionResponse{Operation: "successful"}, nil
 }
