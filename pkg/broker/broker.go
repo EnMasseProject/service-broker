@@ -252,7 +252,10 @@ func (b MaasBroker) Deprovision(instanceUUID uuid.UUID, serviceId string, planId
 		return nil, errors.NewServiceInstanceGone(instanceUUID.String())
 	}
 
-	b.client.DeprovisionAddress(instance.Metadata.Name, instanceUUID)
+	err = b.client.DeprovisionAddress(instance.Metadata.Name, instanceUUID)
+	if err != nil {
+		return nil, errors.NewBrokerError(http.StatusInternalServerError, err.Error())
+	}
 
 	infraIDs[&instanceUUID] = ""
 
