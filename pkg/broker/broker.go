@@ -75,7 +75,7 @@ func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 
 	flavors, err := b.client.GetFlavors()
 	if err != nil {
-		b.log.Warning("Could not get flavors from MaaS API server: %s", err.Error()) // TODO: fail here instead of returning any/multicast only?
+		return nil, errors.NewBrokerError(http.StatusInternalServerError, err.Error())
 	}
 
 	b.log.Info("Processing flavors")
