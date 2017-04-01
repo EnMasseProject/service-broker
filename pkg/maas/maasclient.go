@@ -168,6 +168,22 @@ func (c *MaasClient) ProvisionMaaSInfra(infraID string) error {
 	return nil
 }
 
+func (c *MaasClient) ProvisionAnycast(infraID string, instanceID uuid.UUID, name string) error {
+	return c.ProvisionAddress(infraID, instanceID, name, false, false, "")
+}
+
+func (c *MaasClient) ProvisionMulticast(infraID string, instanceID uuid.UUID, name string) error {
+	return c.ProvisionAddress(infraID, instanceID, name, false, true, "")
+}
+
+func (c *MaasClient) ProvisionQueue(infraID string, instanceID uuid.UUID, name string, flavor *Flavor) error {
+	return c.ProvisionAddress(infraID, instanceID, name, true, false, flavor.Metadata.Name)
+}
+
+func (c *MaasClient) ProvisionTopic(infraID string, instanceID uuid.UUID, name string, flavor *Flavor) error {
+	return c.ProvisionAddress(infraID, instanceID, name, true, true, flavor.Metadata.Name)
+}
+
 func (c *MaasClient) ProvisionAddress(infraID string, instanceUUID uuid.UUID, name string, storeAndForward bool, multicast bool, flavor string) error {
 	c.log.Infof("Provisioning address %s of flavor %s (instance UUID: %s)", name, flavor, instanceUUID)
 
