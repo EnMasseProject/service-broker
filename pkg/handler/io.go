@@ -64,6 +64,6 @@ func writeErrorResponse(w http.ResponseWriter, err error, log *logging.Logger) e
 		return writeResponse(w, brokerError.Status, broker.NewErrorResponse(brokerError.Description))
 	} else {
 		log.Warning("Sending internal error response: " + err.Error())
-		return writeResponse(w, http.StatusInternalServerError, broker.NewErrorResponse("Unknown error: "+err.Error()))
+		return writeResponse(w, http.StatusInternalServerError, broker.NewErrorResponse("Internal error: " + err.Error()))
 	}
 }

@@ -199,7 +199,7 @@ func (b MaasBroker) Provision(instanceUUID uuid.UUID, req *ProvisionRequest) (*P
 	}
 
 	if err != nil {
-		return nil, errors.NewBrokerError(http.StatusInternalServerError, err.Error())
+		return nil, err
 	}
 
 	return &ProvisionResponse{StatusCode: http.StatusCreated, Operation: "successful"}, nil
