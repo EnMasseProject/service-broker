@@ -57,7 +57,7 @@ func (c *MaasClient) GetAddresses(infraID string) ([]Address, error) {
 
 	resp, err := http.Get(fmt.Sprintf("%s/v3/instance/%s/address", c.config.Url, infraID))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
@@ -81,7 +81,7 @@ func (c *MaasClient) GetInstances() ([]Instance, error) {
 
 	resp, err := http.Get(fmt.Sprintf("%s/v3/instance", c.config.Url))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
@@ -105,7 +105,7 @@ func (c *MaasClient) GetInstance(id string) (*Instance, error) {
 
 	resp, err := http.Get(fmt.Sprintf("%s/v3/instance/%s", c.config.Url, id))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
@@ -144,7 +144,7 @@ func (c *MaasClient) ProvisionMaaSInfra(infraID string) error {
 	c.log.Infof("Sending request: %+v", b)
 	resp, err := http.Post(fmt.Sprintf("%s/v3/instance", c.config.Url), "application/json", b)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer resp.Body.Close()
 
@@ -205,7 +205,7 @@ func (c *MaasClient) ProvisionAddress(infraID string, instanceUUID uuid.UUID, na
 	c.log.Infof("Sending request: %+v", b)
 	resp, err := http.Post(fmt.Sprintf("%s/v3/instance/%s/address", c.config.Url, infraID), "application/json", b)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer resp.Body.Close()
 
@@ -225,6 +225,9 @@ func (c *MaasClient) ProvisionAddress(infraID string, instanceUUID uuid.UUID, na
 func (c *MaasClient) DeprovisionAddress(infraID string, instanceUUID uuid.UUID) error {
 	c.log.Infof("Deprovisioning address %s", instanceUUID)
 	address, err := c.GetAddress(infraID, instanceUUID)
+	if err != nil {
+		return err
+	}
 	c.log.Infof("Address name is %s (UUID is %s)", address.Metadata.Name, address.Metadata.Uuid)
 
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/v3/instance/%s/address/%s", c.config.Url, infraID, address.Metadata.Name), nil)
