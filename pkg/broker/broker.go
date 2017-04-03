@@ -24,16 +24,11 @@ type MaasBroker struct {
 	client *maas.MaasClient
 }
 
-func NewMaasBroker(
-	log *logging.Logger,
-	client *maas.MaasClient,
-) (*MaasBroker, error) {
-
+func NewMaasBroker(log *logging.Logger, client *maas.MaasClient) (*MaasBroker, error) {
 	broker := &MaasBroker{
 		log:    log,
 		client: client,
 	}
-
 	return broker, nil
 }
 
