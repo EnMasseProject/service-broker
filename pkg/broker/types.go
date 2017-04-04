@@ -118,6 +118,3 @@ type ErrorResponse struct {
 func NewErrorResponse(Description string) ErrorResponse {
 	return ErrorResponse{Description: Description}
 }
-
-type BootstrapResponse struct {
-}

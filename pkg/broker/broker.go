@@ -10,7 +10,6 @@ import (
 )
 
 type Broker interface {
-	Bootstrap() (*BootstrapResponse, error)
 	Catalog() (*CatalogResponse, error)
 	Provision(uuid.UUID, *ProvisionRequest) (*ProvisionResponse, error)
 	Update(uuid.UUID, *UpdateRequest) (*UpdateResponse, error)
@@ -30,11 +29,6 @@ func NewMaasBroker(log *logging.Logger, client *maas.MaasClient) (*MaasBroker, e
 		client: client,
 	}
 	return broker, nil
-}
-
-func (b MaasBroker) Bootstrap() (*BootstrapResponse, error) {
-	b.log.Info("MaaSBroker::Bootstrap")
-	return &BootstrapResponse{}, nil
 }
 
 const (

@@ -25,7 +25,6 @@ func NewHandler(log *logging.Logger, b broker.Broker) http.Handler {
 	//root := h.router.Headers("X-Broker-API-Version", "2.9").Subrouter()
 	root := h.router.PathPrefix("/").Subrouter()
 
-	root.HandleFunc("/v2/bootstrap", h.bootstrap).Methods(http.MethodPost)
 	root.HandleFunc("/v2/catalog", h.catalog).Methods(http.MethodGet)
 	root.HandleFunc("/v2/service_instances/{instance_uuid}", h.provision).Methods(http.MethodPut)
 	root.HandleFunc("/v2/service_instances/{instance_uuid}", h.update).Methods(http.MethodPatch)
@@ -36,12 +35,6 @@ func NewHandler(log *logging.Logger, b broker.Broker) http.Handler {
 	// TODO NotFoundHandler (must return json!)
 
 	return h
-}
-
-func (h handler) bootstrap(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	resp, err := h.broker.Bootstrap()
-	writeDefaultResponse(w, http.StatusOK, resp, err, h.log)
 }
 
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
