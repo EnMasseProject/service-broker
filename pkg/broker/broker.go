@@ -48,7 +48,7 @@ func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 		ID:          uuid.Parse(QueueServiceUUID),
 		Name:        "queue",
 		Description: "A messaging queue",
-		Bindable:    false,
+		Bindable:    true,
 		Plans:       []Plan{},
 		Metadata:    make(map[string]interface{}),
 	}
@@ -57,7 +57,7 @@ func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 		ID:          uuid.Parse(TopicServiceUUID),
 		Name:        "topic",
 		Description: "A messaging topic",
-		Bindable:    false,
+		Bindable:    true,
 		Plans:       []Plan{},
 		Metadata:    make(map[string]interface{}),
 	}
@@ -89,7 +89,7 @@ func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 		ID:          uuid.Parse(AnycastServiceUUID),
 		Name:        "direct-anycast-network",
 		Description: "A brokerless network for direct anycast messaging",
-		Bindable:    false,
+		Bindable:    true,
 		Plans: []Plan{{
 			ID:          uuid.Parse(AnycastPlanUUID),
 			Name:        "default",
@@ -103,7 +103,7 @@ func (b MaasBroker) Catalog() (*CatalogResponse, error) {
 		ID:          uuid.Parse(MulticastServiceUUID),
 		Name:        "direct-multicast-network",
 		Description: "A brokerless network for direct multicast messaging",
-		Bindable:    false,
+		Bindable:    true,
 		Plans: []Plan{{
 			ID:          uuid.Parse(MulticastPlanUUID),
 			Name:        "default",
