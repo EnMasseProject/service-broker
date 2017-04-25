@@ -1,3 +1,13 @@
+# This repo is obsolete
+
+## This OpenServiceBroker API implementation has been integrated directly into the Enmasse AddressController 
+
+- The new implementation is [here](https://github.com/EnMasseProject/admin/tree/master/address-controller/lib/src/main/java/enmasse/controller/api/osb/v2)
+- The instructions on how to run EnMasse with the Service Catalog are [here](https://github.com/EnMasseProject/enmasse/tree/master/documentation/servicecatalog)
+
+---
+
+
 # EnMasse Service Broker
 
 An [Open Service Broker](https://github.com/openservicebrokerapi/servicebroker) implementation for the EnMasse project.
